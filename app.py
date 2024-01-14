@@ -1,19 +1,24 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-
+from flask_login import LoginManager, login_user, UserMixin
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'sxdfcgvhb23355y4fwekdmcjbw///'  # unikatowy klucz
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
+login_manager = LoginManager(app)
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 @app.route('/', methods=['GET', 'POST'])
 def register():
@@ -27,7 +32,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        return redirect(url_for('profile', username=email))
+        return redirect(url_for('login', username=email))
 
     return render_template('register.html')
 
@@ -59,8 +64,8 @@ def login():
 
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
-            flash('You are now logged in', 'success')
-            return redirect(url_for('profile', username=email))
+            login_user(user)
+            return redirect(url_for('profile', username=user.email))
         else:
             flash('Invalid login credentials', 'danger')
 
