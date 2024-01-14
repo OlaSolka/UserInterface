@@ -17,4 +17,23 @@
         <input type="submit" value="Update Profile">
     </form>
 </body>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+    <h1>User Profile</h1>
+
+    <p>Welcome, {{ user.first_name }} {{ user.last_name }}!</p>
+    <p>Email: {{ user.email }}</p>
+
+    <!-- Tutaj wstawiamy formularz z przyciskiem Logout -->
+    <form action="{{ url_for('logout') }}" method="post">
+        <button type="submit">Logout</button>
+    </form>
+
+</body>
+
 </html>

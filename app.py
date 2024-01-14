@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'sxdfcgvhb23355y4fwekdmcjbw///'  # unikatowy klucz
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
 
@@ -19,7 +21,7 @@ def register():
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         email = request.form['email']
-        password = generate_password_hash(request.form['password'], method='sha256')
+        password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
 
         new_user = User(first_name=first_name, last_name=last_name, email=email, password=password)
         db.session.add(new_user)
@@ -40,6 +42,40 @@ def profile(username):
         db.session.commit()
 
     return render_template('profile.html', user=user)
+
+
+# Funkcja sprawdzająca, czy użytkownik jest zalogowany
+def is_logged_in():
+    return 'user_id' in session
+
+# Endpoint do logowania
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            flash('You are now logged in', 'success')
+            return redirect(url_for('profile', username=email))
+        else:
+            flash('Invalid login credentials', 'danger')
+
+    return render_template('login.html')
+
+
+# Endpoint do wylogowywania
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    if request.method == 'POST':
+        session.pop('user_id', None)
+        flash('You have been logged out', 'success')
+        return redirect(url_for('login'))
+    else:
+        return redirect(url_for('login'))
 
 if __name__ == '__main__':
     with app.app_context():
